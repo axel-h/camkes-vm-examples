@@ -6,8 +6,7 @@
 
 name: Camkes VM
 
-on:
-  pull_request:
+on: [pull_request]
 
 jobs:
   test:
