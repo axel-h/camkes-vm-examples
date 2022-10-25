@@ -16,8 +16,6 @@ if(VIRTIO_NET_PING)
 else()
     set(VmVirtioNetArping ON CACHE BOOL "" FORCE)
 endif()
-set(VmInitRdFile ON CACHE BOOL "" FORCE)
-set(VmDtbFile ON CACHE BOOL "provide dtb" FORCE)
 
 if(${PLATFORM} STREQUAL "zcu102")
     set(AARCH64 ON CACHE BOOL "" FORCE)
