@@ -30,19 +30,46 @@ concurrency:
   group: ${{ github.workflow }}-pr-${{ github.event.number }}
   cancel-in-progress: true
 
+#
+# https://stackoverflow.com/questions/59882715/use-environment-variable-in-github-action-if
+# https://stackoverflow.com/questions/75844035/github-action-how-to-reference-env-variable-in-the-job-and-step-if-condition
+#
+# https://docs.github.com/en/actions/learn-github-actions/contexts#context-availability
+# https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions
+
+env:
+  IS_LABEL_BUILD: ${{ (github.event.action == 'labeled' &&
+                       github.event.label.name == 'hw-build') ||
+                      (github.event.action != 'labeled' &&
+                       contains(github.event.pull_request.labels.*.name, 'hw-build')) }}
+  IS_LABEL_RUN: ${{ (github.event.action == 'labeled' &&
+                     github.event.label.name == 'hw-test') ||
+                    (github.event.action != 'labeled' &&
+                     contains(github.event.pull_request.labels.*.name, 'hw-test')) }}
+
+
 jobs:
+  check_labels:
+    outputs:
+      build: ${{ (github.event.action == 'labeled' &&
+                           github.event.label.name == 'hw-build') ||
+                          (github.event.action != 'labeled' &&
+                           contains(github.event.pull_request.labels.*.name, 'hw-build')) }}
+      run: ${{ (github.event.action == 'labeled' &&
+                         github.event.label.name == 'hw-test') ||
+                        (github.event.action != 'labeled' &&
+                         contains(github.event.pull_request.labels.*.name, 'hw-test')) }}
+    steps:
+    - id: dummy
+      run: echo ""
+
   code:
     name: Freeze Code
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'push' ||
-            github.event_name == 'pull_request_target' &&
-              github.event.action != 'labeled' &&
-              (contains(github.event.pull_request.labels.*.name, 'hw-build') ||
-               contains(github.event.pull_request.labels.*.name, 'hw-test')) ||
-            github.event_name == 'pull_request_target' &&
-              github.event.action == 'labeled' &&
-              (github.event.label.name == 'hw-build' ||
-               github.event.label.name == 'hw-test') }}
+    needs: [check_labels]
+    if: ${{ fromJSON(needs.check_labels.outputs.build) ||
+            fromJSON(needs.check_labels.outputs.run) }}
+
     outputs:
       xml: ${{ steps.repo.outputs.xml }}
     steps:
@@ -55,7 +82,7 @@ jobs:
 
   build:
     name: Build
-    needs: code
+    needs: [code]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
@@ -75,15 +102,9 @@ jobs:
   run:
     name: Hardware
     runs-on: ubuntu-latest
+    if: ${{ fromJSON(needs.check_labels.outputs.run) &&
+            github.repository_owner == 'seL4' }}
     needs: [build]
-    if: ${{ github.repository_owner == 'seL4' &&
-            (github.event_name == 'push' ||
-             github.event_name == 'pull_request_target' &&
-               github.event.action != 'labeled' &&
-               contains(github.event.pull_request.labels.*.name, 'hw-test') ||
-             github.event_name == 'pull_request_target' &&
-               github.event.action == 'labeled' &&
-               github.event.label.name == 'hw-test') }}
     strategy:
       fail-fast: true
       matrix:
