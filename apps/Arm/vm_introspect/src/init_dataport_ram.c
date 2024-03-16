@@ -34,15 +34,20 @@ static vm_frame_t dataport_memory_iterator(uintptr_t addr, void *cookie)
     return frame_result;
 }
 
-/* This overwrites the weak function in the VMM module init_ram */
-void init_ram_module(vm_t *vm, void *cookie)
+/* This overwrites the weak function in the VMM */
+int vm_init_ram(vm_t *vm, const vm_config_t *vm_config)
 {
     int err;
 
     void *reg_cookie = (void *)&vm_config;
-    err = vm_ram_register_at_custom_iterator(vm, vm_config.ram.base,
-                                             vm_config.ram.size,
+    err = vm_ram_register_at_custom_iterator(vm, vm_config->ram.base,
+                                             vm_config->ram.size,
                                              dataport_memory_iterator,
                                              reg_cookie);
-    assert(!err);
+    if (err) {
+        ZF_LOGE("Error: VM RAM registration failed (%d)", err);
+        return -1;
+    }
+
+    return 0;
 }
