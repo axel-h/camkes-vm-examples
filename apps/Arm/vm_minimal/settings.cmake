@@ -31,12 +31,10 @@ if(${PLATFORM} STREQUAL "odroidc2")
     set(VmDtbFile ON CACHE BOOL "" FORCE)
 endif()
 if(${PLATFORM} STREQUAL "qemu-arm-virt")
-    # force cpu
+    # QEMU defaults to aarch64/Cortex-A53
     set(QEMU_MEMORY "2048")
-    set(KernelArmCPU cortex-a53 CACHE STRING "" FORCE)
     set(VmInitRdFile ON CACHE BOOL "" FORCE)
 endif()
 if(${PLATFORM} STREQUAL "zcu102")
-    set(AARCH64 ON CACHE BOOL "" FORCE)
     set(KernelAllowSMCCalls ON CACHE BOOL "" FORCE)
 endif()
